@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fund Expense Ratio Fee Drag Compounding Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .slider-thumb::-webkit-slider-thumb { cursor: pointer; }
+    .input-highlight:focus { outline: 2px solid #6366f1; outline-offset: 2px; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+  <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center gap-3">
+      <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-xl" aria-hidden="true">💸</div>
+      <div>
+        <h1 class="text-xl font-bold text-white">Fund Expense Ratio Fee Drag Tool</h1>
+        <p class="text-sm text-gray-400">See how annual fees erode your portfolio over decades</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8" role="main">
+    <!-- Inputs -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" aria-label="Input parameters">
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <label for="initial" class="block text-sm font-semibold text-gray-300 mb-2">Initial Investment</label>
+        <div class="flex items-center gap-2">
+          <span class="text-gray-400 font-mono">$</span>
+          <input id="initial" type="number" value="100000" min="1000" max="10000000" step="1000"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="Initial investment amount in dollars" />
+        </div>
+        <input type="range" id="initial-slider" min="1000" max="1000000" step="1000" value="100000"
+          class="slider-thumb w-full mt-3 accent-indigo-500" aria-label="Initial investment slider" />
+      </div>
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <label for="annual-contribution" class="block text-sm font-semibold text-gray-300 mb-2">Annual Contribution</label>
+        <div class="flex items-center gap-2">
+          <span class="text-gray-400 font-mono">$</span>
+          <input id="annual-contribution" type="number" value="12000" min="0" max="500000" step="500"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="Annual contribution amount" />
+        </div>
+        <input type="range" id="contribution-slider" min="0" max="50000" step="500" value="12000"
+          class="slider-thumb w-full mt-3 accent-indigo-500" aria-label="Annual contribution slider" />
+      </div>
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <label for="years" class="block text-sm font-semibold text-gray-300 mb-2">Investment Horizon</label>
+        <div class="flex items-center gap-2">
+          <input id="years" type="number" value="30" min="1" max="60" step="1"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="Investment horizon in years" />
+          <span class="text-gray-400 font-mono">yrs</span>
+        </div>
+        <input type="range" id="years-slider" min="1" max="60" step="1" value="30"
+          class="slider-thumb w-full mt-3 accent-indigo-500" aria-label="Years slider" />
+      </div>
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+        <label for="gross-return" class="block text-sm font-semibold text-gray-300 mb-2">Gross Annual Return</label>
+        <div class="flex items-center gap-2">
+          <input id="gross-return" type="number" value="8" min="0" max="30" step="0.1"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="Gross annual return percentage" />
+          <span class="text-gray-400 font-mono">%</span>
+        </div>
+        <input type="range" id="return-slider" min="0" max="20" step="0.1" value="8"
+          class="slider-thumb w-full mt-3 accent-indigo-500" aria-label="Gross return slider" />
+      </div>
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800 border-l-4 border-l-red-500">
+        <label for="high-expense" class="block text-sm font-semibold text-red-300 mb-2">High-Cost Fund Expense Ratio</label>
+        <div class="flex items-center gap-2">
+          <input id="high-expense" type="number" value="1.0" min="0" max="5" step="0.01"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="High cost fund expense ratio percentage" />
+          <span class="text-gray-400 font-mono">%</span>
+        </div>
+        <input type="range" id="high-slider" min="0" max="3" step="0.01" value="1.0"
+          class="slider-thumb w-full mt-3 accent-red-500" aria-label="High expense ratio slider" />
+        <p class="text-xs text-gray-500 mt-2">Typical actively managed fund</p>
+      </div>
+
+      <div class="bg-gray-900 rounded-xl p-5 border border-gray-800 border-l-4 border-l-green-500">
+        <label for="low-expense" class="block text-sm font-semibold text-green-300 mb-2">Low-Cost Index Expense Ratio</label>
+        <div class="flex items-center gap-2">
+          <input id="low-expense" type="number" value="0.05" min="0" max="2" step="0.01"
+            class="input-highlight bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white font-mono text-lg"
+            aria-label="Low cost index fund expense ratio percentage" />
+          <span class="text-gray-400 font-mono">%</span>
+        </div>
+        <input type="range" id="low-slider" min="0" max="1" step="0.01" value="0.05"
+          class="slider-thumb w-full mt-3 accent-green-500" aria-label="Low expense ratio slider" />
+        <p class="text-xs text-gray-500 mt-2">Typical index fund (e.g. Vanguard)</p>
+      </div>
+
+    </section>
+
+    <!-- Summary Cards -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" aria-label="Summary results">
+      <div class="bg-green-900/30 border border-green-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-green-400 font-semibold uppercase tracking-wider mb-1">Low-Cost Final Value</div>
+        <div id="low-final" class="text-2xl font-bold text-green-300 font-mono">–</div>
+      </div>
+      <div class="bg-red-900/30 border border-red-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-red-400 font-semibold uppercase tracking-wider mb-1">High-Cost Final Value</div>
+        <div id="high-final" class="text-2xl font-bold text-red-300 font-mono">–</div>
+      </div>
+      <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-yellow-400 font-semibold uppercase tracking-wider mb-1">Fee Drag (Total Lost)</div>
+        <div id="fee-drag" class="text-2xl font-bold text-yellow-300 font-mono">–</div>
+      </div>
+      <div class="bg-purple-900/30 border border-purple-700 rounded-xl p-4 text-center">
+        <div class="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-1">% Eroded by Fees</div>
+        <div id="pct-eroded" class="text-2xl font-bold text-purple-300 font-mono">–</div>
+      </div>
+    </section>
+
+    <!-- Chart -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-8">
+      <h2 class="text-lg font-semibold text-white mb-4">Portfolio Growth Comparison</h2>
+      <div class="relative" style="height: 380px;">
+        <canvas id="growthChart" role="img" aria-label="Portfolio growth comparison chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Fee Breakdown Table -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-8">
+      <h2 class="text-lg font-semibold text-white mb-4">Year-by-Year Fee Impact</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" role="table" aria-label="Year by year fee impact">
+          <thead>
+            <tr class="border-b border-gray-700">
+              <th class="text-left py-2 px-3 text-gray-400 font-semibold" scope="col">Year</th>
+              <th class="text-right py-2 px-3 text-green-400 font-semibold" scope="col">Low-Cost Value</th>
+              <th class="text-right py-2 px-3 text-red-400 font-semibold" scope="col">High-Cost Value</th>
+              <th class="text-right py-2 px-3 text-yellow-400 font-semibold" scope="col">Annual Fee Paid</th>
+              <th class="text-right py-2 px-3 text-purple-400 font-semibold" scope="col">Cumulative Drag</th>
+            </tr>
+          </thead>
+          <tbody id="fee-table" class="divide-y divide-gray-800">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Key Insights -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+      <h2 class="text-lg font-semibold text-white mb-4">Key Insights</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-indigo-400 font-semibold mb-2">The Compounding Effect</div>
+          <p class="text-sm text-gray-300">Fees compound just like returns — a 1% fee doesn't just cost 1% of gains. It reduces your compounding base each year, causing exponential drag over time.</p>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-indigo-400 font-semibold mb-2">The 1% Rule</div>
+          <p class="text-sm text-gray-300">A 1% expense ratio on a 30-year investment often erodes 20-25% of your final portfolio value — not 30% of gains. The "fee" is far larger than it appears.</p>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="text-indigo-400 font-semibold mb-2">Index Fund Advantage</div>
+          <p class="text-sm text-gray-300">Most actively managed funds charge 0.5%–2%+ annually, yet consistently underperform index funds net of fees. Low-cost indexing captures market returns efficiently.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    const state = {
+      initial: 100000,
+      annualContribution: 12000,
+      years: 30,
+      grossReturn: 8,
+      highExpense: 1.0,
+      lowExpense: 0.05
+    };
+
+    // Load from localStorage
+    const saved = localStorage.getItem('expenseRatioTool');
+    if (saved) {
+      try { Object.assign(state, JSON.parse(saved)); } catch(e) {}
+    }
+
+    // Elements
+    const els = {
+      initial: document.getElementById('initial'),
+      initialSlider: document.getElementById('initial-slider'),
+      contribution: document.getElementById('annual-contribution'),
+      contributionSlider: document.getElementById('contribution-slider'),
+      years: document.getElementById('years'),
+      yearsSlider: document.getElementById('years-slider'),
+      grossReturn: document.getElementById('gross-return'),
+      returnSlider: document.getElementById('return-slider'),
+      highExpense: document.getElementById('high-expense'),
+      highSlider: document.getElementById('high-slider'),
+      lowExpense: document.getElementById('low-expense'),
+      lowSlider: document.getElementById('low-slider'),
+      lowFinal: document.getElementById('low-final'),
+      highFinal: document.getElementById('high-final'),
+      feeDrag: document.getElementById('fee-drag'),
+      pctEroded: document.getElementById('pct-eroded'),
+      feeTable: document.getElementById('fee-table'),
+    };
+
+    function fmt(n) {
+      if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+      return '$' + n.toFixed(0);
+    }
+
+    function calcGrowth(initial, contrib, years, netReturn) {
+      const values = [initial];
+      let val = initial;
+      for (let y = 1; y <= years; y++) {
+        val = val * (1 + netReturn/100) + contrib;
+        values.push(val);
+      }
+      return values;
+    }
+
+    let chart = null;
+
+    function calculate() {
+      const { initial, annualContribution, years, grossReturn, highExpense, lowExpense } = state;
+
+      const lowReturn = grossReturn - lowExpense;
+      const highReturn = grossReturn - highExpense;
+
+      const lowValues = calcGrowth(initial, annualContribution, years, lowReturn);
+      const highValues = calcGrowth(initial, annualContribution, years, highReturn);
+
+      const lowFinal = lowValues[years];
+      const highFinal = highValues[years];
+      const drag = lowFinal - highFinal;
+      const pct = (drag / lowFinal * 100).toFixed(1);
+
+      els.lowFinal.textContent = fmt(lowFinal);
+      els.highFinal.textContent = fmt(highFinal);
+      els.feeDrag.textContent = fmt(drag);
+      els.pctEroded.textContent = pct + '%';
+
+      // Table
+      const milestone = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].filter(y => y <= years);
+      if (!milestone.includes(years)) milestone.push(years);
+      milestone.sort((a,b)=>a-b);
+
+      els.feeTable.innerHTML = '';
+      milestone.forEach(y => {
+        const annualFeeHigh = highValues[y-1] * (highExpense/100);
+        const cumDrag = lowValues[y] - highValues[y];
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-800/50';
+        const yearTd = document.createElement('td');
+        yearTd.className = 'py-2 px-3 text-gray-300 font-mono';
+        yearTd.textContent = 'Year ' + y;
+        const lowTd = document.createElement('td');
+        lowTd.className = 'py-2 px-3 text-right text-green-300 font-mono';
+        lowTd.textContent = fmt(lowValues[y]);
+        const highTd = document.createElement('td');
+        highTd.className = 'py-2 px-3 text-right text-red-300 font-mono';
+        highTd.textContent = fmt(highValues[y]);
+        const feeTd = document.createElement('td');
+        feeTd.className = 'py-2 px-3 text-right text-yellow-300 font-mono';
+        feeTd.textContent = fmt(annualFeeHigh);
+        const dragTd = document.createElement('td');
+        dragTd.className = 'py-2 px-3 text-right text-purple-300 font-mono';
+        dragTd.textContent = fmt(cumDrag);
+        tr.appendChild(yearTd);
+        tr.appendChild(lowTd);
+        tr.appendChild(highTd);
+        tr.appendChild(feeTd);
+        tr.appendChild(dragTd);
+        els.feeTable.appendChild(tr);
+      });
+
+      // Chart
+      const labels = Array.from({length: years+1}, (_, i) => i);
+      const ctx = document.getElementById('growthChart').getContext('2d');
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: `Low-Cost (${lowExpense}% ER)`,
+              data: lowValues,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34,197,94,0.08)',
+              fill: true,
+              tension: 0.3,
+              borderWidth: 2.5,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            },
+            {
+              label: `High-Cost (${highExpense}% ER)`,
+              data: highValues,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239,68,68,0.08)',
+              fill: true,
+              tension: 0.3,
+              borderWidth: 2.5,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+            },
+            {
+              label: 'Fee Drag Gap',
+              data: lowValues.map((v, i) => v - highValues[i]),
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245,158,11,0.12)',
+              fill: false,
+              tension: 0.3,
+              borderWidth: 2,
+              borderDash: [5,4],
+              pointRadius: 0,
+              pointHoverRadius: 4,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: '#d1d5db', font: { size: 12 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Year', color: '#9ca3af' },
+              ticks: { color: '#9ca3af' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              title: { display: true, text: 'Portfolio Value', color: '#9ca3af' },
+              ticks: {
+                color: '#9ca3af',
+                callback: v => fmt(v)
+              },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
+
+      localStorage.setItem('expenseRatioTool', JSON.stringify(state));
+    }
+
+    // Sync input <-> slider
+    function syncPair(inputId, sliderId, stateKey) {
+      const inp = document.getElementById(inputId);
+      const sld = document.getElementById(sliderId);
+      inp.value = state[stateKey];
+      sld.value = state[stateKey];
+      inp.addEventListener('input', () => {
+        state[stateKey] = parseFloat(inp.value) || 0;
+        sld.value = state[stateKey];
+        calculate();
+      });
+      sld.addEventListener('input', () => {
+        state[stateKey] = parseFloat(sld.value);
+        inp.value = state[stateKey];
+        calculate();
+      });
+    }
+
+    syncPair('initial', 'initial-slider', 'initial');
+    syncPair('annual-contribution', 'contribution-slider', 'annualContribution');
+    syncPair('years', 'years-slider', 'years');
+    syncPair('gross-return', 'return-slider', 'grossReturn');
+    syncPair('high-expense', 'high-slider', 'highExpense');
+    syncPair('low-expense', 'low-slider', 'lowExpense');
+
+    calculate();
+  </script>
+</body>
+</html>
